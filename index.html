@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Bob高科技轉乘系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap');
+        
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-green: #4ade80;
+            --dark-bg: #020617;
+        }
+
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: var(--dark-bg);
+            color: #e2e8f0;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .cyber-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .journey-card {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 1.25rem;
+            border: 1px solid rgba(0, 242, 255, 0.15);
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            position: relative;
+        }
+
+        .journey-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), var(--neon-green), transparent);
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .step-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1.25rem 0.75rem;
+            position: relative;
+            background: linear-gradient(90deg, rgba(0, 242, 255, 0.03) 0%, rgba(74, 222, 128, 0.03) 100%);
+        }
+
+        .step-row:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .time-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 62px;
+        }
+
+        .time-dep {
+            @apply cyber-font text-xl font-bold tracking-tight;
+            color: var(--neon-blue);
+            text-shadow: 0 0 12px rgba(0, 242, 255, 0.6);
+        }
+
+        .time-arr {
+            @apply cyber-font text-xl font-bold tracking-tight;
+            color: var(--neon-green);
+            text-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+        }
+
+        .route-visual {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .station-name {
+            @apply text-[13px] font-bold text-white whitespace-nowrap;
+        }
+
+        .connector-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--neon-blue) 0%, var(--neon-green) 100%);
+            position: relative;
+            min-width: 25px;
+            opacity: 0.6;
+        }
+
+        .connector-line::after {
+            content: '';
+            position: absolute;
+            right: -2px; top: 50%;
+            width: 5px; height: 5px;
+            border-top: 1.5px solid var(--neon-green);
+            border-right: 1.5px solid var(--neon-green);
+            transform: translateY(-50%) rotate(45deg);
+        }
+
+        .btn-next-bus {
+            @apply w-full py-4 px-4 bg-slate-900/60 text-cyan-400 font-bold text-xs tracking-[0.2em] transition-all active:bg-cyan-950/50 flex items-center justify-center gap-2 border-t border-white/5;
+        }
+
+        .label-text {
+            @apply text-[8px] font-bold uppercase tracking-widest mb-0.5;
+        }
+
+        .tag-transfer {
+            @apply px-1.5 py-0.5 rounded text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 ml-2;
+        }
+
+        .btn-lock {
+            @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-bold tracking-widest;
+        }
+        .btn-lock.unlocked {
+            @apply border-slate-700 text-slate-400 bg-slate-800/20 active:bg-slate-800/50;
+        }
+        .btn-lock.locked {
+            @apply border-amber-500/50 text-amber-400 bg-amber-500/10 animate-pulse;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+
+    <div class="max-w-md mx-auto px-4 py-6">
+        <header class="mb-6 flex justify-between items-start border-b border-slate-800 pb-5">
+            <div class="flex-1">
+                <div class="flex items-center gap-2">
+                    <h1 id="title-text" class="text-lg cyber-font font-bold tracking-[0.2em] text-white">即時通勤計算系統</h1>
+                </div>
+                <div id="location-status" class="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-2 tracking-widest">
+                    <span id="location-dot" class="w-2 h-2 rounded-full bg-slate-700 animate-pulse"></span>
+                    <span id="location-text">等待定位...</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-3">
+                <div class="text-right">
+                    <p id="current-time-display" class="cyber-font text-2xl font-bold text-cyan-400" style="text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);">--:--</p>
+                    <div class="text-[9px] font-bold text-slate-500 tracking-wider mt-0.5">UTC+8</div>
+                </div>
+                
+                <button id="lock-toggle" class="btn-lock unlocked">
+                    <span id="lock-icon">⚡</span>
+                    <span id="lock-text-btn">鎖定數據</span>
+                </button>
+            </div>
+        </header>
+
+        <div id="main-container" class="space-y-6">
+            <div class="flex flex-col items-center justify-center py-20 gap-4">
+                <div class="w-10 h-10 border border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin"></div>
+                <p class="cyber-font text-[10px] text-cyan-900 tracking-[0.5em]">系統初始化中</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTW2l0HWECp7aHxDU3gO4KCzqYnTfwuujaHqYnciuMgyF3LbEJQQVq-aGPKBYLEtNnt46n4y48Adjl5/pub?output=csv';
+        const CACHE_KEY = 'bus_timetable_data';
+        const LOCK_KEY = 'bus_locked_data';
+
+        const STATION_COORDS = {
+            '公館': { lat: 25.01499, lng: 121.53423 },
+            '中正紀念堂': { lat: 25.03281, lng: 121.51826 },
+            '奇岩': { lat: 25.12565, lng: 121.50104 },
+            '淡水': { lat: 25.16808, lng: 121.44551 }
+        };
+
+        const JOURNEYS = [
+            {
+                id: 'SOUTH',
+                name: "往南：淡水 ➔ 中正紀念堂 ➔ 公館",
+                type: 'fixed',
+                startFrom: '淡水',
+                steps: [
+                    { col: 0, from: '淡水', to: '中正紀念堂', travelTime: 42 },
+                    { col: 1, from: '中正紀念堂', to: '公館', travelTime: 6 }
+                ]
+            },
+            {
+                id: 'NORTH_DYNAMIC',
+                name: "往北：公館 ➔ 中正紀念堂 ➔ 淡水",
+                type: 'dynamic_north',
+                startFrom: '公館',
+                startStep: { col: 2, from: '公館', to: '中正紀念堂', travelTime: 6 },
+                options: [
+                    { col: 3, from: '中正紀念堂', to: '淡水', travelTime: 44, isDirect: true },
+                    { col: 4, from: '中正紀念堂', to: '奇岩', travelTime: 25, isDirect: false, next: { col: 5, from: '奇岩', to: '淡水', travelTime: 19 } }
+                ]
+            }
+        ];
+
+        let journeyOffsets = { 'SOUTH': 0, 'NORTH_DYNAMIC': 0 };
+        let userLocation = null;
+        let isLocked = false;
+
+        function updateClock() {
+            const now = new Date();
+            const hh = now.getHours().toString().padStart(2, '0');
+            const mm = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('current-time-display').innerText = `${hh}:${mm}`;
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function addMinutes(hhmm, mins) {
+            let h = parseInt(hhmm.substring(0, 2)), m = parseInt(hhmm.substring(2, 4)) + mins;
+            h += Math.floor(m / 60); m = m % 60;
+            return h.toString().padStart(2, '0') + m.toString().padStart(2, '0');
+        }
+
+        function formatTime(hhmm) { return hhmm.substring(0, 2) + ':' + hhmm.substring(2, 4); }
+
+        function toggleNextBus(journeyId) {
+            if (isLocked) return;
+            journeyOffsets[journeyId] = (journeyOffsets[journeyId] + 1) % 3;
+            updateUI();
+        }
+
+        function applyLockVisuals(locked) {
+            const btn = document.getElementById('lock-toggle');
+            const icon = document.getElementById('lock-icon');
+            const text = document.getElementById('lock-text-btn');
+            const title = document.getElementById('title-text');
+
+            if (locked) {
+                btn.className = "btn-lock locked";
+                icon.innerText = "🔒";
+                text.innerText = "解除鎖定";
+                title.innerText = "時間已錨定";
+                title.classList.add('text-amber-500');
+            } else {
+                btn.className = "btn-lock unlocked";
+                icon.innerText = "⚡";
+                text.innerText = "鎖定數據";
+                title.innerText = "即時通勤計算系統";
+                title.classList.remove('text-amber-500');
+            }
+        }
+
+        document.getElementById('lock-toggle').onclick = () => {
+            isLocked = !isLocked;
+            applyLockVisuals(isLocked);
+
+            if (isLocked) {
+                // 鎖定當前畫面狀態與偏移量
+                const currentContent = document.getElementById('main-container').innerHTML;
+                const state = {
+                    html: currentContent,
+                    offsets: JSON.parse(JSON.stringify(journeyOffsets))
+                };
+                localStorage.setItem(LOCK_KEY, JSON.stringify(state));
+            } else {
+                // 解除鎖定：刪除資料並立刻刷新 UI
+                localStorage.removeItem(LOCK_KEY);
+                // 重置偏移量 (選擇性，通常解除鎖定代表要看當下的，所以維持 offset 0 較直覺)
+                journeyOffsets = { 'SOUTH': 0, 'NORTH_DYNAMIC': 0 };
+                updateUI();
+            }
+        };
+
+        async function init() {
+            // 初始化時鐘顯示
+            updateClock();
+
+            // 1. 檢查是否有存檔的鎖定狀態
+            const lockStore = localStorage.getItem(LOCK_KEY);
+            if (lockStore) {
+                const state = JSON.parse(lockStore);
+                isLocked = true;
+                journeyOffsets = state.offsets;
+                applyLockVisuals(true);
+                document.getElementById('main-container').innerHTML = state.html;
+            }
+
+            // 2. 優先顯示快取數據 (如果沒鎖定的話)
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                window.csvData = cachedData;
+                if (!isLocked) updateUI();
+            }
+
+            // 3. 獲取用戶位置
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    const dot = document.getElementById('location-dot');
+                    dot.classList.replace('bg-slate-700', 'bg-cyan-400');
+                    dot.classList.add('shadow-[0_0_8px_#00f2ff]');
+                    document.getElementById('location-text').innerText = '定位同步中';
+                    if (!isLocked) updateUI();
+                }, () => {
+                    document.getElementById('location-text').innerText = '定位未授權';
+                });
+            }
+
+            // 4. 定期從雲端獲取最新數據
+            try {
+                const res = await fetch(CSV_URL);
+                const text = await res.text();
+                window.csvData = text;
+                localStorage.setItem(CACHE_KEY, text);
+                if (!isLocked) updateUI();
+            } catch (e) {
+                console.error("CSV 更新失敗，使用快取");
+            }
+
+            // 5. 定時任務：時鐘與 UI 刷新
+            // 每 10 秒更新一次時鐘，維持秒級/分級精準度
+            setInterval(updateClock, 10000);
+
+            // 每 30 秒在非鎖定狀態下重新計算班次
+            setInterval(() => {
+                if (!isLocked) updateUI();
+            }, 30000);
+        }
+
+        function renderStep(from, to, depTime, arrTime, showTag = false, tagText = "") {
+            return `
+                <div class="step-row">
+                    <div class="time-box">
+                        <span class="label-text text-cyan-900">發車</span>
+                        <span class="time-dep">${formatTime(depTime)}</span>
+                    </div>
+                    <div class="route-visual">
+                        <span class="station-name">${from}</span>
+                        <div class="connector-line"></div>
+                        <span class="station-name">${to}${showTag ? `<span class="tag-transfer">${tagText}</span>` : ''}</span>
+                    </div>
+                    <div class="time-box">
+                        <span class="label-text text-green-900">抵達</span>
+                        <span class="time-arr">${formatTime(arrTime)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getBestTime(rows, col, filterTime, offset = 0) {
+            let times = [];
+            for (let r = 1; r < rows.length; r++) {
+                const t = rows[r][col];
+                if (t && /^\d{4}$/.test(t) && t >= filterTime) times.push(t);
+            }
+            times.sort();
+            return times[offset] || null;
+        }
+
+        function updateUI() {
+            // 關鍵保護：鎖定中或沒資料時不執行重繪
+            if (isLocked || !window.csvData) return;
+            
+            const rows = window.csvData.split('\n').map(r => r.split(',').map(c => c.trim()));
+            const container = document.getElementById('main-container');
+            const now = new Date();
+            const currentHHMM = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
+            
+            container.innerHTML = '';
+
+            let sortedJourneys = [...JOURNEYS];
+            if (userLocation) {
+                const distToGongguan = getDistance(userLocation.lat, userLocation.lng, STATION_COORDS['公館'].lat, STATION_COORDS['公館'].lng);
+                const distToTamsui = getDistance(userLocation.lat, userLocation.lng, STATION_COORDS['淡水'].lat, STATION_COORDS['淡水'].lng);
+
+                if (distToGongguan < 2) {
+                    sortedJourneys.sort((a, b) => a.id === 'NORTH_DYNAMIC' ? -1 : 1);
+                    document.getElementById('location-text').innerText = '靠近公館站';
+                } else if (distToTamsui < 2) {
+                    sortedJourneys.sort((a, b) => a.id === 'SOUTH' ? -1 : 1);
+                    document.getElementById('location-text').innerText = '靠近淡水站';
+                }
+            }
+
+            sortedJourneys.forEach(journey => {
+                const offset = journeyOffsets[journey.id];
+                const card = document.createElement('div');
+                card.className = "journey-card flex flex-col";
+                let timelineHtml = "";
+                let possible = true;
+
+                if (journey.type === 'fixed') {
+                    let lastTime = currentHHMM;
+                    journey.steps.forEach((step, idx) => {
+                        let dep = getBestTime(rows, step.col, idx === 0 ? currentHHMM : lastTime, idx === 0 ? offset : 0);
+                        if (!dep) { possible = false; return; }
+                        let arr = addMinutes(dep, step.travelTime);
+                        timelineHtml += renderStep(step.from, step.to, dep, arr);
+                        lastTime = arr;
+                    });
+                } else if (journey.type === 'dynamic_north') {
+                    let dep1 = getBestTime(rows, journey.startStep.col, currentHHMM, offset);
+                    if (!dep1) possible = false;
+                    else {
+                        let arr1 = addMinutes(dep1, journey.startStep.travelTime);
+                        timelineHtml += renderStep(journey.startStep.from, journey.startStep.to, dep1, arr1);
+                        
+                        let candidates = journey.options.map(opt => {
+                            let depNext = getBestTime(rows, opt.col, arr1, 0);
+                            return depNext ? { ...opt, depNext } : null;
+                        }).filter(c => c !== null);
+
+                        if (candidates.length === 0) possible = false;
+                        else {
+                            candidates.sort((a, b) => a.depNext.localeCompare(b.depNext));
+                            let best = candidates[0];
+                            let arrNext = addMinutes(best.depNext, best.travelTime);
+                            timelineHtml += renderStep(best.from, best.to, best.depNext, arrNext, !best.isDirect, best.isDirect ? "" : "需轉乘");
+                            
+                            if (best.next) {
+                                let depFinal = getBestTime(rows, best.next.col, arrNext, 0);
+                                if (depFinal) {
+                                    let arrFinal = addMinutes(depFinal, best.next.travelTime);
+                                    timelineHtml += renderStep(best.next.from, best.next.to, depFinal, arrFinal);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (possible) {
+                    card.innerHTML = `<div class="px-4 py-3 bg-slate-900/40 border-b border-white/5"><h2 class="text-[9px] font-bold text-cyan-800 tracking-[0.2em] mb-0.5 uppercase">智能導航協議</h2><div class="text-xs font-bold text-slate-100 tracking-wide">${journey.name}</div></div>` + timelineHtml;
+                    const nextBtn = document.createElement('button');
+                    nextBtn.className = "btn-next-bus cyber-font";
+                    nextBtn.innerHTML = `<span>掃描後續班次 (+${offset})</span>`;
+                    nextBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleNextBus(journey.id);
+                    };
+                    card.appendChild(nextBtn);
+                    container.appendChild(card);
+                }
+            });
+        }
+
+        // 啟動程序
+        init();
+    </script>
+</body>
+</html>
