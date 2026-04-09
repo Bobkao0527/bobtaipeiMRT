@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Bob高科技轉乘系統</title>
     
-    <!-- 加入主畫面圖示設定 (Apple Touch Icon) -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPgo8cmVjdCB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiByeD0iMjAwIiBmaWxsPSIjMDIwNjE3Ii8+CjxwYXRoIGQ9Ik0zMDAgMzAwIEg3MjQgViA3MjQgSCAzMDAgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmMmZmIiBzdHJva2Utd2lkdGg9IjIwIiBvcGFjaXR5PSIwLjMiLz4KPGcgc3Ryb2tlPSIjMDBmMmZmIiBzdHJva2Utd2lkdGg9IjQwIiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgo8cGF0aCBkPSJNNjQwIDI1MEgzODRDMzEwIDI1MCAyNTAgMzEwIDI1MCAzODRWNjQwQzI1MCA3MTQgMzEwIDc3NCAzODQgNzc0SDY0MEM3MTQgNzc0IDc3NCA3MTQgNzc0IDY0MFYzODRDNzc0IDMxMCA3MTQgMjUwIDY0MCAyNTBaIi8+CjxwYXRoIGQ9Ik0yNTAgNTAwSDc3NCIvPgo8cGF0aCBkPSJNMzUwIDY1MEgzNjAiLz4KPHBhdGggZD0iTTY2NCA2NTBINjY5Ii8+CjxwYXRoIGQ9Ik00NTAgMzUwSDU3NCIvPgo8L2c+CjxyZWN0IHg9IjMwMCIgeT0iNTAwIiB3aWR0aD0iNDI0IiBoZWlnaHQ9IjI3NCIgcng9IjgwIiBmaWxsPSIjMDBmMmZmIiBmaWxsLW9wYW齊dHk9IjAuMSIvPgo8L3N2Zz4=">
+    <!-- 使用 GitHub 圖床的自訂圖示 -->
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/Bobkao0527/bobtaipeiMRT/20296ecd31b8fa2372a545c4e5f991954d6b29ac/icon.jpeg">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -40,6 +40,12 @@
             overflow: hidden;
             backdrop-filter: blur(12px);
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .journey-card.out-of-service {
+            border: 1px solid rgba(255, 68, 68, 0.4);
+            box-shadow: 0 0 25px rgba(255, 68, 68, 0.1);
         }
 
         .journey-card::before {
@@ -48,6 +54,10 @@
             top: 0; left: 0; width: 100%; height: 2px;
             background: linear-gradient(90deg, transparent, var(--neon-blue), var(--neon-green), transparent);
             animation: scan 4s linear infinite;
+        }
+
+        .journey-card.out-of-service::before {
+            background: linear-gradient(90deg, transparent, var(--neon-red), transparent);
         }
 
         @keyframes scan {
@@ -62,6 +72,10 @@
             padding: 1.25rem 0.75rem;
             position: relative;
             background: linear-gradient(90deg, rgba(0, 242, 255, 0.03) 0%, rgba(74, 222, 128, 0.03) 100%);
+        }
+
+        .out-of-service .step-row {
+            background: linear-gradient(90deg, rgba(255, 68, 68, 0.05) 0%, transparent 100%);
         }
 
         .step-row:not(:last-child) {
@@ -108,18 +122,17 @@
             opacity: 0.6;
         }
 
-        .connector-line::after {
-            content: '';
-            position: absolute;
-            right: -2px; top: 50%;
-            width: 5px; height: 5px;
-            border-top: 1.5px solid var(--neon-green);
-            border-right: 1.5px solid var(--neon-green);
-            transform: translateY(-50%) rotate(45deg);
+        .out-of-service .connector-line {
+            background: var(--neon-red);
+            opacity: 0.3;
         }
 
         .btn-next-bus {
             @apply w-full py-4 px-4 bg-slate-900/60 text-cyan-400 font-bold text-xs tracking-[0.2em] transition-all active:bg-cyan-950/50 flex items-center justify-center gap-2 border-t border-white/5;
+        }
+        
+        .btn-next-bus:disabled {
+            @apply text-slate-700 bg-slate-900/20 cursor-not-allowed;
         }
 
         .label-text {
@@ -130,20 +143,22 @@
             @apply px-1.5 py-0.5 rounded text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 ml-2;
         }
 
-        /* 鎖定按鈕樣式 */
         .btn-lock {
             @apply flex items-center justify-center gap-2 px-3 py-2 rounded-full border-2 transition-all duration-300 text-[11px] font-black tracking-[0.05em] shadow-lg active:scale-95;
             min-width: 130px;
         }
-        /* 未鎖定狀態：綠色 */
         .btn-lock.unlocked {
             @apply border-emerald-500/50 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10;
             box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
         }
-        /* 鎖定狀態：紅色 + 呼吸特效 */
         .btn-lock.locked {
             @apply border-red-500 text-red-500 bg-red-500/10 animate-pulse;
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.2);
+        }
+
+        .error-text {
+            @apply text-red-500 font-bold text-sm cyber-font tracking-tighter;
+            text-shadow: 0 0 8px rgba(255, 68, 68, 0.4);
         }
     </style>
 </head>
@@ -236,13 +251,25 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
+        /**
+         * 跨午夜計算邏輯：
+         * 使用者 CSV 採用 24XX 代表凌晨（如 2430 代表 00:30）
+         * 運算時保留此格式以利比較，顯示時再轉回 00:XX
+         */
         function addMinutes(hhmm, mins) {
             let h = parseInt(hhmm.substring(0, 2)), m = parseInt(hhmm.substring(2, 4)) + mins;
             h += Math.floor(m / 60); m = m % 60;
             return h.toString().padStart(2, '0') + m.toString().padStart(2, '0');
         }
 
-        function formatTime(hhmm) { return hhmm.substring(0, 2) + ':' + hhmm.substring(2, 4); }
+        /**
+         * 將 24XX, 25XX 轉為 00:XX, 01:XX 供顯示
+         */
+        function formatTime(hhmm) { 
+            let h = parseInt(hhmm.substring(0, 2)) % 24;
+            let m = hhmm.substring(2, 4);
+            return h.toString().padStart(2, '0') + ':' + m;
+        }
 
         function toggleNextBus(journeyId) {
             if (isLocked) return;
@@ -285,7 +312,7 @@
             } else {
                 localStorage.removeItem(LOCK_KEY);
                 journeyOffsets = { 'SOUTH': 0, 'NORTH_DYNAMIC': 0 };
-                updateUI(); // 解除鎖定後立即刷新
+                updateUI();
             }
         };
 
@@ -360,7 +387,10 @@
             let times = [];
             for (let r = 1; r < rows.length; r++) {
                 const t = rows[r][col];
-                if (t && /^\d{4}$/.test(t) && t >= filterTime) times.push(t);
+                if (t && /^\d{4}$/.test(t)) {
+                    // 因為 CSV 已經處理成 24XX，這裡直接字串比較即可完美支援遞增搜尋
+                    if (t >= filterTime) times.push(t);
+                }
             }
             times.sort();
             return times[offset] || null;
@@ -372,7 +402,12 @@
             const rows = window.csvData.split('\n').map(r => r.split(',').map(c => c.trim()));
             const container = document.getElementById('main-container');
             const now = new Date();
-            const currentHHMM = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
+            
+            // 獲取當前時間，如果是凌晨 00~03 點，可能需要視為 24xx~27xx (視 CSV 定義)
+            // 這裡簡單假設：如果現在是凌晨 0~3 點，filterTime 使用 24+hhmm
+            let currentH = now.getHours();
+            let currentM = now.getMinutes().toString().padStart(2, '0');
+            let currentHHMM = (currentH < 4 ? (currentH + 24) : currentH).toString().padStart(2, '0') + currentM;
             
             container.innerHTML = '';
 
@@ -396,20 +431,28 @@
                 card.className = "journey-card flex flex-col";
                 let timelineHtml = "";
                 let possible = true;
+                let noMoreBus = false;
 
                 if (journey.type === 'fixed') {
                     let lastTime = currentHHMM;
-                    journey.steps.forEach((step, idx) => {
-                        let dep = getBestTime(rows, step.col, idx === 0 ? currentHHMM : lastTime, idx === 0 ? offset : 0);
-                        if (!dep) { possible = false; return; }
+                    for (let i = 0; i < journey.steps.length; i++) {
+                        const step = journey.steps[i];
+                        let dep = getBestTime(rows, step.col, i === 0 ? currentHHMM : lastTime, i === 0 ? offset : 0);
+                        if (!dep) { 
+                            possible = false; 
+                            noMoreBus = true;
+                            break; 
+                        }
                         let arr = addMinutes(dep, step.travelTime);
                         timelineHtml += renderStep(step.from, step.to, dep, arr);
                         lastTime = arr;
-                    });
+                    }
                 } else if (journey.type === 'dynamic_north') {
                     let dep1 = getBestTime(rows, journey.startStep.col, currentHHMM, offset);
-                    if (!dep1) possible = false;
-                    else {
+                    if (!dep1) {
+                        possible = false;
+                        noMoreBus = true;
+                    } else {
                         let arr1 = addMinutes(dep1, journey.startStep.travelTime);
                         timelineHtml += renderStep(journey.startStep.from, journey.startStep.to, dep1, arr1);
                         
@@ -418,8 +461,10 @@
                             return depNext ? { ...opt, depNext } : null;
                         }).filter(c => c !== null);
 
-                        if (candidates.length === 0) possible = false;
-                        else {
+                        if (candidates.length === 0) {
+                            possible = false;
+                            noMoreBus = true;
+                        } else {
                             candidates.sort((a, b) => a.depNext.localeCompare(b.depNext));
                             let best = candidates[0];
                             let arrNext = addMinutes(best.depNext, best.travelTime);
@@ -430,13 +475,31 @@
                                 if (depFinal) {
                                     let arrFinal = addMinutes(depFinal, best.next.travelTime);
                                     timelineHtml += renderStep(best.next.from, best.next.to, depFinal, arrFinal);
+                                } else {
+                                    possible = false;
+                                    noMoreBus = true;
                                 }
                             }
                         }
                     }
                 }
 
-                if (possible) {
+                if (!possible && noMoreBus) {
+                    card.classList.add('out-of-service');
+                    card.innerHTML = `
+                        <div class="px-4 py-3 bg-red-950/20 border-b border-red-500/20">
+                            <h2 class="text-[9px] font-bold text-red-500 tracking-[0.2em] mb-0.5 uppercase">SECURITY ALERT: SERVICE ENDED</h2>
+                            <div class="text-xs font-bold text-red-200 tracking-wide">${journey.name}</div>
+                        </div>
+                        <div class="step-row justify-center py-10 flex-col gap-2">
+                            <div class="error-text">已經來不及趕上末班車</div>
+                            <div class="text-[10px] text-red-900 cyber-font">CRITICAL: NO_SCHEDULE_FOUND</div>
+                        </div>
+                        <button class="btn-next-bus" disabled>
+                            <span>掃描失效</span>
+                        </button>
+                    `;
+                } else if (possible) {
                     card.innerHTML = `<div class="px-4 py-3 bg-slate-900/40 border-b border-white/5"><h2 class="text-[9px] font-bold text-cyan-800 tracking-[0.2em] mb-0.5 uppercase">智能導航協議</h2><div class="text-xs font-bold text-slate-100 tracking-wide">${journey.name}</div></div>` + timelineHtml;
                     const nextBtn = document.createElement('button');
                     nextBtn.className = "btn-next-bus cyber-font";
@@ -446,397 +509,10 @@
                         toggleNextBus(journey.id);
                     };
                     card.appendChild(nextBtn);
-                    container.appendChild(card);
+                } else {
+                    return;
                 }
-            });
-        }
-
-        init();
-    </script>
-</body>
-</html>            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .time-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: 62px;
-        }
-
-        .time-dep {
-            @apply cyber-font text-xl font-bold tracking-tight;
-            color: var(--neon-blue);
-            text-shadow: 0 0 12px rgba(0, 242, 255, 0.6);
-        }
-
-        .time-arr {
-            @apply cyber-font text-xl font-bold tracking-tight;
-            color: var(--neon-green);
-            text-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
-        }
-
-        .route-visual {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 6px;
-        }
-
-        .station-name {
-            @apply text-[13px] font-bold text-white whitespace-nowrap;
-        }
-
-        .connector-line {
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, var(--neon-blue) 0%, var(--neon-green) 100%);
-            position: relative;
-            min-width: 25px;
-            opacity: 0.6;
-        }
-
-        .connector-line::after {
-            content: '';
-            position: absolute;
-            right: -2px; top: 50%;
-            width: 5px; height: 5px;
-            border-top: 1.5px solid var(--neon-green);
-            border-right: 1.5px solid var(--neon-green);
-            transform: translateY(-50%) rotate(45deg);
-        }
-
-        .btn-next-bus {
-            @apply w-full py-4 px-4 bg-slate-900/60 text-cyan-400 font-bold text-xs tracking-[0.2em] transition-all active:bg-cyan-950/50 flex items-center justify-center gap-2 border-t border-white/5;
-        }
-
-        .label-text {
-            @apply text-[8px] font-bold uppercase tracking-widest mb-0.5;
-        }
-
-        .tag-transfer {
-            @apply px-1.5 py-0.5 rounded text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 ml-2;
-        }
-
-        /* 優化鎖定按鈕樣式 */
-        .btn-lock {
-            @apply flex items-center justify-center gap-2 px-4 py-2 rounded-full border-2 transition-all duration-300 text-[11px] font-black tracking-[0.15em] shadow-lg active:scale-95;
-            min-width: 110px;
-        }
-        /* 未鎖定狀態：綠色 */
-        .btn-lock.unlocked {
-            @apply border-emerald-500/50 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10;
-            box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
-        }
-        /* 鎖定狀態：紅色 + 呼吸特效 */
-        .btn-lock.locked {
-            @apply border-red-500 text-red-500 bg-red-500/10 animate-pulse;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.2);
-        }
-    </style>
-</head>
-<body class="min-h-screen pb-10">
-
-    <div class="max-w-md mx-auto px-4 py-6">
-        <header class="mb-6 flex justify-between items-center border-b border-slate-800 pb-5">
-            <div class="flex-1">
-                <div class="flex items-center gap-2">
-                    <h1 id="title-text" class="text-lg cyber-font font-bold tracking-[0.2em] text-white">即時通勤計算系統</h1>
-                </div>
-                <div id="location-status" class="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-2 tracking-widest">
-                    <span id="location-dot" class="w-2 h-2 rounded-full bg-slate-700 animate-pulse"></span>
-                    <span id="location-text">等待定位...</span>
-                </div>
-            </div>
-            
-            <div class="flex flex-col items-end gap-3">
-                <div class="text-right">
-                    <p id="current-time-display" class="cyber-font text-2xl font-bold text-cyan-400" style="text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);">--:--</p>
-                </div>
-                
-                <button id="lock-toggle" class="btn-lock unlocked">
-                    <span id="lock-icon">●</span>
-                    <span id="lock-text-btn">即時追蹤</span>
-                </button>
-            </div>
-        </header>
-
-        <div id="main-container" class="space-y-6">
-            <div class="flex flex-col items-center justify-center py-20 gap-4">
-                <div class="w-10 h-10 border border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin"></div>
-                <p class="cyber-font text-[10px] text-cyan-900 tracking-[0.5em]">系統初始化中</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTW2l0HWECp7aHxDU3gO4KCzqYnTfwuujaHqYnciuMgyF3LbEJQQVq-aGPKBYLEtNnt46n4y48Adjl5/pub?output=csv';
-        const CACHE_KEY = 'bus_timetable_data';
-        const LOCK_KEY = 'bus_locked_data';
-
-        const STATION_COORDS = {
-            '公館': { lat: 25.01499, lng: 121.53423 },
-            '中正紀念堂': { lat: 25.03281, lng: 121.51826 },
-            '奇岩': { lat: 25.12565, lng: 121.50104 },
-            '淡水': { lat: 25.16808, lng: 121.44551 }
-        };
-
-        const JOURNEYS = [
-            {
-                id: 'SOUTH',
-                name: "往南：淡水 ➔ 中正紀念堂 ➔ 公館",
-                type: 'fixed',
-                startFrom: '淡水',
-                steps: [
-                    { col: 0, from: '淡水', to: '中正紀念堂', travelTime: 42 },
-                    { col: 1, from: '中正紀念堂', to: '公館', travelTime: 6 }
-                ]
-            },
-            {
-                id: 'NORTH_DYNAMIC',
-                name: "往北：公館 ➔ 中正紀念堂 ➔ 淡水",
-                type: 'dynamic_north',
-                startFrom: '公館',
-                startStep: { col: 2, from: '公館', to: '中正紀念堂', travelTime: 6 },
-                options: [
-                    { col: 3, from: '中正紀念堂', to: '淡水', travelTime: 44, isDirect: true },
-                    { col: 4, from: '中正紀念堂', to: '奇岩', travelTime: 25, isDirect: false, next: { col: 5, from: '奇岩', to: '淡水', travelTime: 19 } }
-                ]
-            }
-        ];
-
-        let journeyOffsets = { 'SOUTH': 0, 'NORTH_DYNAMIC': 0 };
-        let userLocation = null;
-        let isLocked = false;
-
-        function updateClock() {
-            const now = new Date();
-            const hh = now.getHours().toString().padStart(2, '0');
-            const mm = now.getMinutes().toString().padStart(2, '0');
-            document.getElementById('current-time-display').innerText = `${hh}:${mm}`;
-        }
-
-        function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
-
-        function addMinutes(hhmm, mins) {
-            let h = parseInt(hhmm.substring(0, 2)), m = parseInt(hhmm.substring(2, 4)) + mins;
-            h += Math.floor(m / 60); m = m % 60;
-            return h.toString().padStart(2, '0') + m.toString().padStart(2, '0');
-        }
-
-        function formatTime(hhmm) { return hhmm.substring(0, 2) + ':' + hhmm.substring(2, 4); }
-
-        function toggleNextBus(journeyId) {
-            if (isLocked) return;
-            journeyOffsets[journeyId] = (journeyOffsets[journeyId] + 1) % 3;
-            updateUI();
-        }
-
-        function applyLockVisuals(locked) {
-            const btn = document.getElementById('lock-toggle');
-            const icon = document.getElementById('lock-icon');
-            const text = document.getElementById('lock-text-btn');
-            const title = document.getElementById('title-text');
-
-            if (locked) {
-                btn.className = "btn-lock locked";
-                icon.innerText = "■";
-                text.innerText = "鎖定中";
-                title.innerText = "時間已錨定";
-                title.classList.add('text-red-500');
-            } else {
-                btn.className = "btn-lock unlocked";
-                icon.innerText = "●";
-                text.innerText = "即時追蹤";
-                title.innerText = "即時通勤計算系統";
-                title.classList.remove('text-red-500');
-            }
-        }
-
-        document.getElementById('lock-toggle').onclick = () => {
-            isLocked = !isLocked;
-            applyLockVisuals(isLocked);
-
-            if (isLocked) {
-                const currentContent = document.getElementById('main-container').innerHTML;
-                const state = {
-                    html: currentContent,
-                    offsets: JSON.parse(JSON.stringify(journeyOffsets))
-                };
-                localStorage.setItem(LOCK_KEY, JSON.stringify(state));
-            } else {
-                localStorage.removeItem(LOCK_KEY);
-                journeyOffsets = { 'SOUTH': 0, 'NORTH_DYNAMIC': 0 };
-                updateUI(); // 解除鎖定後立即刷新
-            }
-        };
-
-        async function init() {
-            updateClock();
-
-            const lockStore = localStorage.getItem(LOCK_KEY);
-            if (lockStore) {
-                const state = JSON.parse(lockStore);
-                isLocked = true;
-                journeyOffsets = state.offsets;
-                applyLockVisuals(true);
-                document.getElementById('main-container').innerHTML = state.html;
-            }
-
-            const cachedData = localStorage.getItem(CACHE_KEY);
-            if (cachedData) {
-                window.csvData = cachedData;
-                if (!isLocked) updateUI();
-            }
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    const dot = document.getElementById('location-dot');
-                    dot.classList.replace('bg-slate-700', 'bg-cyan-400');
-                    dot.classList.add('shadow-[0_0_8px_#00f2ff]');
-                    document.getElementById('location-text').innerText = '定位同步中';
-                    if (!isLocked) updateUI();
-                }, () => {
-                    document.getElementById('location-text').innerText = '定位未授權';
-                });
-            }
-
-            try {
-                const res = await fetch(CSV_URL);
-                const text = await res.text();
-                window.csvData = text;
-                localStorage.setItem(CACHE_KEY, text);
-                if (!isLocked) updateUI();
-            } catch (e) {
-                console.error("CSV 更新失敗");
-            }
-
-            setInterval(updateClock, 10000);
-            setInterval(() => {
-                if (!isLocked) updateUI();
-            }, 30000);
-        }
-
-        function renderStep(from, to, depTime, arrTime, showTag = false, tagText = "") {
-            return `
-                <div class="step-row">
-                    <div class="time-box">
-                        <span class="label-text text-cyan-900">發車</span>
-                        <span class="time-dep">${formatTime(depTime)}</span>
-                    </div>
-                    <div class="route-visual">
-                        <span class="station-name">${from}</span>
-                        <div class="connector-line"></div>
-                        <span class="station-name">${to}${showTag ? `<span class="tag-transfer">${tagText}</span>` : ''}</span>
-                    </div>
-                    <div class="time-box">
-                        <span class="label-text text-green-900">抵達</span>
-                        <span class="time-arr">${formatTime(arrTime)}</span>
-                    </div>
-                </div>
-            `;
-        }
-
-        function getBestTime(rows, col, filterTime, offset = 0) {
-            let times = [];
-            for (let r = 1; r < rows.length; r++) {
-                const t = rows[r][col];
-                if (t && /^\d{4}$/.test(t) && t >= filterTime) times.push(t);
-            }
-            times.sort();
-            return times[offset] || null;
-        }
-
-        function updateUI() {
-            if (isLocked || !window.csvData) return;
-            
-            const rows = window.csvData.split('\n').map(r => r.split(',').map(c => c.trim()));
-            const container = document.getElementById('main-container');
-            const now = new Date();
-            const currentHHMM = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
-            
-            container.innerHTML = '';
-
-            let sortedJourneys = [...JOURNEYS];
-            if (userLocation) {
-                const distToGongguan = getDistance(userLocation.lat, userLocation.lng, STATION_COORDS['公館'].lat, STATION_COORDS['公館'].lng);
-                const distToTamsui = getDistance(userLocation.lat, userLocation.lng, STATION_COORDS['淡水'].lat, STATION_COORDS['淡水'].lng);
-
-                if (distToGongguan < 2) {
-                    sortedJourneys.sort((a, b) => a.id === 'NORTH_DYNAMIC' ? -1 : 1);
-                    document.getElementById('location-text').innerText = '靠近公館站';
-                } else if (distToTamsui < 2) {
-                    sortedJourneys.sort((a, b) => a.id === 'SOUTH' ? -1 : 1);
-                    document.getElementById('location-text').innerText = '靠近淡水站';
-                }
-            }
-
-            sortedJourneys.forEach(journey => {
-                const offset = journeyOffsets[journey.id];
-                const card = document.createElement('div');
-                card.className = "journey-card flex flex-col";
-                let timelineHtml = "";
-                let possible = true;
-
-                if (journey.type === 'fixed') {
-                    let lastTime = currentHHMM;
-                    journey.steps.forEach((step, idx) => {
-                        let dep = getBestTime(rows, step.col, idx === 0 ? currentHHMM : lastTime, idx === 0 ? offset : 0);
-                        if (!dep) { possible = false; return; }
-                        let arr = addMinutes(dep, step.travelTime);
-                        timelineHtml += renderStep(step.from, step.to, dep, arr);
-                        lastTime = arr;
-                    });
-                } else if (journey.type === 'dynamic_north') {
-                    let dep1 = getBestTime(rows, journey.startStep.col, currentHHMM, offset);
-                    if (!dep1) possible = false;
-                    else {
-                        let arr1 = addMinutes(dep1, journey.startStep.travelTime);
-                        timelineHtml += renderStep(journey.startStep.from, journey.startStep.to, dep1, arr1);
-                        
-                        let candidates = journey.options.map(opt => {
-                            let depNext = getBestTime(rows, opt.col, arr1, 0);
-                            return depNext ? { ...opt, depNext } : null;
-                        }).filter(c => c !== null);
-
-                        if (candidates.length === 0) possible = false;
-                        else {
-                            candidates.sort((a, b) => a.depNext.localeCompare(b.depNext));
-                            let best = candidates[0];
-                            let arrNext = addMinutes(best.depNext, best.travelTime);
-                            timelineHtml += renderStep(best.from, best.to, best.depNext, arrNext, !best.isDirect, best.isDirect ? "" : "需轉乘");
-                            
-                            if (best.next) {
-                                let depFinal = getBestTime(rows, best.next.col, arrNext, 0);
-                                if (depFinal) {
-                                    let arrFinal = addMinutes(depFinal, best.next.travelTime);
-                                    timelineHtml += renderStep(best.next.from, best.next.to, depFinal, arrFinal);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (possible) {
-                    card.innerHTML = `<div class="px-4 py-3 bg-slate-900/40 border-b border-white/5"><h2 class="text-[9px] font-bold text-cyan-800 tracking-[0.2em] mb-0.5 uppercase">智能導航協議</h2><div class="text-xs font-bold text-slate-100 tracking-wide">${journey.name}</div></div>` + timelineHtml;
-                    const nextBtn = document.createElement('button');
-                    nextBtn.className = "btn-next-bus cyber-font";
-                    nextBtn.innerHTML = `<span>掃描後續班次 (+${offset})</span>`;
-                    nextBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        toggleNextBus(journey.id);
-                    };
-                    card.appendChild(nextBtn);
-                    container.appendChild(card);
-                }
+                container.appendChild(card);
             });
         }
 
