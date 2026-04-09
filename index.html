@@ -13,6 +13,7 @@
         :root {
             --neon-blue: #00f2ff;
             --neon-green: #4ade80;
+            --neon-red: #ff4444;
             --dark-bg: #020617;
         }
 
@@ -125,22 +126,27 @@
             @apply px-1.5 py-0.5 rounded text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 ml-2;
         }
 
+        /* 優化鎖定按鈕樣式 */
         .btn-lock {
-            @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-bold tracking-widest;
+            @apply flex items-center justify-center gap-2 px-4 py-2 rounded-full border-2 transition-all duration-300 text-[11px] font-black tracking-[0.15em] shadow-lg active:scale-95;
+            min-width: 110px;
         }
+        /* 未鎖定狀態：綠色 */
         .btn-lock.unlocked {
-            @apply border-slate-700 text-slate-400 bg-slate-800/20 active:bg-slate-800/50;
+            @apply border-emerald-500/50 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10;
+            box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
         }
+        /* 鎖定狀態：紅色 + 呼吸特效 */
         .btn-lock.locked {
-            @apply border-amber-500/50 text-amber-400 bg-amber-500/10 animate-pulse;
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+            @apply border-red-500 text-red-500 bg-red-500/10 animate-pulse;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.2);
         }
     </style>
 </head>
 <body class="min-h-screen pb-10">
 
     <div class="max-w-md mx-auto px-4 py-6">
-        <header class="mb-6 flex justify-between items-start border-b border-slate-800 pb-5">
+        <header class="mb-6 flex justify-between items-center border-b border-slate-800 pb-5">
             <div class="flex-1">
                 <div class="flex items-center gap-2">
                     <h1 id="title-text" class="text-lg cyber-font font-bold tracking-[0.2em] text-white">即時通勤計算系統</h1>
@@ -154,12 +160,11 @@
             <div class="flex flex-col items-end gap-3">
                 <div class="text-right">
                     <p id="current-time-display" class="cyber-font text-2xl font-bold text-cyan-400" style="text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);">--:--</p>
-                    <div class="text-[9px] font-bold text-slate-500 tracking-wider mt-0.5">UTC+8</div>
                 </div>
                 
                 <button id="lock-toggle" class="btn-lock unlocked">
-                    <span id="lock-icon">⚡</span>
-                    <span id="lock-text-btn">鎖定數據</span>
+                    <span id="lock-icon">●</span>
+                    <span id="lock-text-btn">即時追蹤</span>
                 </button>
             </div>
         </header>
@@ -249,16 +254,16 @@
 
             if (locked) {
                 btn.className = "btn-lock locked";
-                icon.innerText = "🔒";
-                text.innerText = "解除鎖定";
+                icon.innerText = "■";
+                text.innerText = "鎖定中";
                 title.innerText = "時間已錨定";
-                title.classList.add('text-amber-500');
+                title.classList.add('text-red-500');
             } else {
                 btn.className = "btn-lock unlocked";
-                icon.innerText = "⚡";
-                text.innerText = "鎖定數據";
+                icon.innerText = "●";
+                text.innerText = "即時追蹤";
                 title.innerText = "即時通勤計算系統";
-                title.classList.remove('text-amber-500');
+                title.classList.remove('text-red-500');
             }
         }
 
@@ -267,7 +272,6 @@
             applyLockVisuals(isLocked);
 
             if (isLocked) {
-                // 鎖定當前畫面狀態與偏移量
                 const currentContent = document.getElementById('main-container').innerHTML;
                 const state = {
                     html: currentContent,
@@ -275,19 +279,15 @@
                 };
                 localStorage.setItem(LOCK_KEY, JSON.stringify(state));
             } else {
-                // 解除鎖定：刪除資料並立刻刷新 UI
                 localStorage.removeItem(LOCK_KEY);
-                // 重置偏移量 (選擇性，通常解除鎖定代表要看當下的，所以維持 offset 0 較直覺)
                 journeyOffsets = { 'SOUTH': 0, 'NORTH_DYNAMIC': 0 };
-                updateUI();
+                updateUI(); // 解除鎖定後立即刷新
             }
         };
 
         async function init() {
-            // 初始化時鐘顯示
             updateClock();
 
-            // 1. 檢查是否有存檔的鎖定狀態
             const lockStore = localStorage.getItem(LOCK_KEY);
             if (lockStore) {
                 const state = JSON.parse(lockStore);
@@ -297,14 +297,12 @@
                 document.getElementById('main-container').innerHTML = state.html;
             }
 
-            // 2. 優先顯示快取數據 (如果沒鎖定的話)
             const cachedData = localStorage.getItem(CACHE_KEY);
             if (cachedData) {
                 window.csvData = cachedData;
                 if (!isLocked) updateUI();
             }
 
-            // 3. 獲取用戶位置
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
                     userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -318,7 +316,6 @@
                 });
             }
 
-            // 4. 定期從雲端獲取最新數據
             try {
                 const res = await fetch(CSV_URL);
                 const text = await res.text();
@@ -326,14 +323,10 @@
                 localStorage.setItem(CACHE_KEY, text);
                 if (!isLocked) updateUI();
             } catch (e) {
-                console.error("CSV 更新失敗，使用快取");
+                console.error("CSV 更新失敗");
             }
 
-            // 5. 定時任務：時鐘與 UI 刷新
-            // 每 10 秒更新一次時鐘，維持秒級/分級精準度
             setInterval(updateClock, 10000);
-
-            // 每 30 秒在非鎖定狀態下重新計算班次
             setInterval(() => {
                 if (!isLocked) updateUI();
             }, 30000);
@@ -370,7 +363,6 @@
         }
 
         function updateUI() {
-            // 關鍵保護：鎖定中或沒資料時不執行重繪
             if (isLocked || !window.csvData) return;
             
             const rows = window.csvData.split('\n').map(r => r.split(',').map(c => c.trim()));
@@ -455,7 +447,6 @@
             });
         }
 
-        // 啟動程序
         init();
     </script>
 </body>
