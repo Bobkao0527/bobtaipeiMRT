@@ -43,6 +43,7 @@
             transition: all 0.3s ease;
         }
 
+        /* 沒車時的紅色風格 */
         .journey-card.out-of-service {
             border: 1px solid rgba(255, 68, 68, 0.4);
             box-shadow: 0 0 25px rgba(255, 68, 68, 0.1);
@@ -139,10 +140,6 @@
             @apply text-[8px] font-bold uppercase tracking-widest mb-0.5;
         }
 
-        .tag-transfer {
-            @apply px-1.5 py-0.5 rounded text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 ml-2;
-        }
-
         .btn-lock {
             @apply flex items-center justify-center gap-2 px-3 py-2 rounded-full border-2 transition-all duration-300 text-[11px] font-black tracking-[0.05em] shadow-lg active:scale-95;
             min-width: 130px;
@@ -159,6 +156,71 @@
         .error-text {
             @apply text-red-500 font-bold text-sm cyber-font tracking-tighter;
             text-shadow: 0 0 8px rgba(255, 68, 68, 0.4);
+        }
+
+        /* 彈窗 UI 升級 */
+        #data-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.98);
+            z-index: 1000;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            flex-direction: column;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* 頂部掃描條效果 */
+        .table-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 242, 255, 0.02) 2px, rgba(0, 242, 255, 0.02) 4px);
+            pointer-events: none;
+        }
+
+        #raw-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        #raw-table th {
+            @apply sticky top-0 z-10 p-4 text-cyan-400 cyber-font font-bold border-b border-cyan-500/40 bg-slate-900/90;
+            text-align: left;
+            text-shadow: 0 0 8px rgba(0, 242, 255, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        #raw-table td {
+            @apply p-4 border-b border-white/5 transition-all duration-200;
+        }
+
+        #raw-table tr:hover td {
+            @apply bg-cyan-500/10 text-white;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+
+        #raw-table td.time-cell {
+            @apply cyber-font font-bold text-cyan-500;
+        }
+
+        .modal-header-line {
+            height: 1px;
+            background: linear-gradient(90deg, var(--neon-blue), transparent);
+            margin-bottom: 1.5rem;
         }
     </style>
 </head>
@@ -193,6 +255,36 @@
                 <div class="w-10 h-10 border border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin"></div>
                 <p class="cyber-font text-[10px] text-cyan-900 tracking-[0.5em]">系統初始化中</p>
             </div>
+        </div>
+
+        <!-- 查看全部按鈕 -->
+        <div class="mt-8">
+            <button onclick="openModal()" class="w-full py-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 cyber-font text-[11px] tracking-[0.3em] font-bold active:bg-cyan-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                <span class="animate-pulse">▶</span> DATA EXPLORER / 查看完整時刻表
+            </button>
+        </div>
+    </div>
+
+    <!-- 數據彈窗 -->
+    <div id="data-modal">
+        <div class="flex justify-between items-center mb-1">
+            <div class="flex flex-col">
+                <h2 class="text-white cyber-font font-bold tracking-widest text-lg">SYSTEM DATA LOGS</h2>
+                <span class="text-[8px] text-cyan-700 cyber-font">ACCESSING REALTIME_DB_V2 // COL 0-5</span>
+            </div>
+            <button onclick="closeModal()" class="text-red-400 cyber-font font-bold px-4 py-2 border border-red-500/30 rounded-lg bg-red-500/5 active:scale-95 transition-all text-xs">
+                TERMINATE [X]
+            </button>
+        </div>
+        <div class="modal-header-line"></div>
+        <div class="table-container" id="table-wrap">
+            <table id="raw-table">
+                <!-- JavaScript 動態插入 -->
+            </table>
+        </div>
+        <div class="mt-4 flex justify-between items-center px-2">
+            <span class="text-[9px] text-slate-600 cyber-font">ENCRYPTED END-TO-END</span>
+            <span class="text-[9px] text-cyan-900 cyber-font" id="row-count">ROWS: --</span>
         </div>
     </div>
 
@@ -251,30 +343,58 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        /**
-         * 跨午夜計算邏輯：
-         * 使用者 CSV 採用 24XX 代表凌晨（如 2430 代表 00:30）
-         * 運算時保留此格式以利比較，顯示時再轉回 00:XX
-         */
         function addMinutes(hhmm, mins) {
             let h = parseInt(hhmm.substring(0, 2)), m = parseInt(hhmm.substring(2, 4)) + mins;
             h += Math.floor(m / 60); m = m % 60;
+            h = h % 24;
             return h.toString().padStart(2, '0') + m.toString().padStart(2, '0');
         }
 
-        /**
-         * 將 24XX, 25XX 轉為 00:XX, 01:XX 供顯示
-         */
-        function formatTime(hhmm) { 
-            let h = parseInt(hhmm.substring(0, 2)) % 24;
-            let m = hhmm.substring(2, 4);
-            return h.toString().padStart(2, '0') + ':' + m;
-        }
+        function formatTime(hhmm) { return hhmm.substring(0, 2) + ':' + hhmm.substring(2, 4); }
 
         function toggleNextBus(journeyId) {
             if (isLocked) return;
             journeyOffsets[journeyId] = (journeyOffsets[journeyId] + 1) % 3;
             updateUI();
+        }
+
+        /* 彈窗邏輯 */
+        function openModal() {
+            renderRawTable();
+            document.getElementById('data-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('data-modal').style.display = 'none';
+        }
+
+        function renderRawTable() {
+            if (!window.csvData) return;
+            const lines = window.csvData.split('\n');
+            const rows = lines.map(line => line.split(',').map(cell => cell.trim()));
+            const table = document.getElementById('raw-table');
+            
+            let html = `<thead><tr>`;
+            for (let i = 0; i <= 5; i++) {
+                html += `<th>${rows[0][i] || `CH_${i}`}</th>`;
+            }
+            html += `</tr></thead><tbody>`;
+
+            let validRowCount = 0;
+            for (let r = 1; r < rows.length; r++) {
+                if (rows[r].every(c => !c)) continue;
+                validRowCount++;
+                html += `<tr>`;
+                for (let c = 0; c <= 5; c++) {
+                    let val = rows[r][c] || "-";
+                    let isTime = /^\d{4}$/.test(val);
+                    let displayVal = isTime ? formatTime(val) : val;
+                    html += `<td class="${isTime ? 'time-cell' : ''}">${displayVal}</td>`;
+                }
+                html += `</tr>`;
+            }
+            table.innerHTML = html + `</tbody>`;
+            document.getElementById('row-count').innerText = `RECORDS_COUNT: ${validRowCount}`;
         }
 
         function applyLockVisuals(locked) {
@@ -363,7 +483,7 @@
             }, 30000);
         }
 
-        function renderStep(from, to, depTime, arrTime, showTag = false, tagText = "") {
+        function renderStep(from, to, depTime, arrTime) {
             return `
                 <div class="step-row">
                     <div class="time-box">
@@ -373,7 +493,7 @@
                     <div class="route-visual">
                         <span class="station-name">${from}</span>
                         <div class="connector-line"></div>
-                        <span class="station-name">${to}${showTag ? `<span class="tag-transfer">${tagText}</span>` : ''}</span>
+                        <span class="station-name">${to}</span>
                     </div>
                     <div class="time-box">
                         <span class="label-text text-green-900">抵達</span>
@@ -388,7 +508,6 @@
             for (let r = 1; r < rows.length; r++) {
                 const t = rows[r][col];
                 if (t && /^\d{4}$/.test(t)) {
-                    // 因為 CSV 已經處理成 24XX，這裡直接字串比較即可完美支援遞增搜尋
                     if (t >= filterTime) times.push(t);
                 }
             }
@@ -402,12 +521,7 @@
             const rows = window.csvData.split('\n').map(r => r.split(',').map(c => c.trim()));
             const container = document.getElementById('main-container');
             const now = new Date();
-            
-            // 獲取當前時間，如果是凌晨 00~03 點，可能需要視為 24xx~27xx (視 CSV 定義)
-            // 這裡簡單假設：如果現在是凌晨 0~3 點，filterTime 使用 24+hhmm
-            let currentH = now.getHours();
-            let currentM = now.getMinutes().toString().padStart(2, '0');
-            let currentHHMM = (currentH < 4 ? (currentH + 24) : currentH).toString().padStart(2, '0') + currentM;
+            const currentHHMM = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
             
             container.innerHTML = '';
 
@@ -468,7 +582,7 @@
                             candidates.sort((a, b) => a.depNext.localeCompare(b.depNext));
                             let best = candidates[0];
                             let arrNext = addMinutes(best.depNext, best.travelTime);
-                            timelineHtml += renderStep(best.from, best.to, best.depNext, arrNext, !best.isDirect, best.isDirect ? "" : "需轉乘");
+                            timelineHtml += renderStep(best.from, best.to, best.depNext, arrNext);
                             
                             if (best.next) {
                                 let depFinal = getBestTime(rows, best.next.col, arrNext, 0);
