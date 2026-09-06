@@ -77,21 +77,6 @@
             overflow: hidden;
         }
 
-        /* HUD 角落邊框裝飾 */
-        .hud-corner {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            border-color: var(--neon-cyan);
-            pointer-events: none;
-            z-index: 22;
-            opacity: 0.6;
-        }
-        .hud-tl { top: 8px; left: 8px; border-top: 2px solid; border-left: 2px solid; }
-        .hud-tr { top: 8px; right: 8px; border-top: 2px solid; border-right: 2px solid; }
-        .hud-bl { bottom: 8px; left: 8px; border-bottom: 2px solid; border-left: 2px solid; }
-        .hud-br { bottom: 8px; right: 8px; border-bottom: 2px solid; border-right: 2px solid; }
-
         /* 多重 Iframe 專用獨立樣式 */
         .app-iframe {
             position: absolute;
@@ -246,12 +231,6 @@
 
     <!-- 中間 Iframe 內容區域 -->
     <main class="iframe-wrapper">
-        <!-- HUD 裝飾邊角 -->
-        <div class="hud-corner hud-tl"></div>
-        <div class="hud-corner hud-tr"></div>
-        <div class="hud-corner hud-bl"></div>
-        <div class="hud-corner hud-br"></div>
-
         <!-- 載入中過渡動畫 -->
         <div id="frame-loader" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-25 transition-opacity duration-300 pointer-events-none opacity-0">
             <div class="relative w-16 h-16 flex items-center justify-center">
